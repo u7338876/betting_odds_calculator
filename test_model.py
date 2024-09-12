@@ -1,5 +1,6 @@
 from predict_odds import match_odds 
 from predict_odds import get_probability_array
+from predict_odds import over_under_odds
 import pandas as pd
 import numpy as np
 import argparse
@@ -7,7 +8,7 @@ import argparse
 def df_epl_24_25(url):
     # Read CSV, standardise team names, and remove newly promoted teams
     df = pd.read_csv(url)
-    columns = ['HomeTeam', 'AwayTeam', 'FTHG', 'FTAG', 'FTR', 'B365H', 'B365D', 'B365A']
+    columns = ['HomeTeam', 'AwayTeam', 'FTHG', 'FTAG', 'FTR', 'B365H', 'B365D', 'B365A', 'B365>2.5', 'B365<2.5']
     df['HomeTeam'] = df['HomeTeam'].replace('Man United', 'Manchester United')
     df['AwayTeam'] = df['AwayTeam'].replace('Man United', 'Manchester United')
     df['HomeTeam'] = df['HomeTeam'].replace('Man City', 'Manchester City')
@@ -27,7 +28,7 @@ def df_epl_24_25(url):
 def df_epl_23_24(url):
     # Read CSV, standardise team names, and remove newly promoted teams
     df = pd.read_csv(url)
-    columns = ['HomeTeam', 'AwayTeam', 'FTHG', 'FTAG', 'FTR', 'B365H', 'B365D', 'B365A']
+    columns = ['HomeTeam', 'AwayTeam', 'FTHG', 'FTAG', 'FTR', 'B365H', 'B365D', 'B365A', 'B365>2.5', 'B365<2.5']
     df['HomeTeam'] = df['HomeTeam'].replace('Man United', 'Manchester United')
     df['AwayTeam'] = df['AwayTeam'].replace('Man United', 'Manchester United')
     df['HomeTeam'] = df['HomeTeam'].replace('Man City', 'Manchester City')
@@ -47,14 +48,22 @@ def add_odds_to_df(df, df_attack, df_defence, df_home_advantage):
     predicted_home_odds = []
     predicted_draw_odds = []
     predicted_away_odds = []
+    over_2half_odds = []
+    under_2half_odds = []
     for i in range(len(df)):
-        odds = match_odds(get_probability_array(df['HomeTeam'][i], df['AwayTeam'][i], df_attack, df_defence, df_home_advantage))
-        predicted_home_odds.append(odds[0])
-        predicted_draw_odds.append(odds[1])
-        predicted_away_odds.append(odds[2])
+        prob_array = get_probability_array(df['HomeTeam'][i], df['AwayTeam'][i], df_attack, df_defence, df_home_advantage)
+        result_odds = match_odds(prob_array)
+        over_under_2half_odds = over_under_odds(prob_array, 2.5)
+        predicted_home_odds.append(result_odds[0])
+        predicted_draw_odds.append(result_odds[1])
+        predicted_away_odds.append(result_odds[2])
+        over_2half_odds.append(over_under_2half_odds[0])
+        under_2half_odds.append(over_under_2half_odds[1])
     df['Predicted_H'] = predicted_home_odds
     df['Predicted_D'] = predicted_draw_odds
     df['Predicted_A'] = predicted_away_odds
+    df['Predicted_Over2.5'] = over_2half_odds
+    df['Predicted_Under2.5'] = under_2half_odds
     return df
 
 def kelly_criterion(actual_odds, predicted_odds, wallet):
@@ -63,7 +72,7 @@ def kelly_criterion(actual_odds, predicted_odds, wallet):
     b = actual_odds-1
     return (b*p-q)*wallet/b
 
-def count_winnings(df, wallet):
+def count_winnings_result(df, wallet):
     winnings = 0
     for i in range(len(df)):
         # Bet if actual odds are more than predicted odds
@@ -90,12 +99,33 @@ def count_winnings(df, wallet):
                 winnings -= toBet
     return winnings
 
+def count_winnings_over_under(df, wallet):
+    winnings = 0
+    for i in range(len(df)):
+        # Bet if actual odds are more than predicted odds
+        if df['B365>2.5'][i] > df['Predicted_Over2.5'][i]:
+            toBet = kelly_criterion(df['B365>2.5'][i], df['Predicted_Over2.5'][i], wallet)
+            if df['FTHG'][i] + df['FTHG'][i] > 2.5:
+                winnings += toBet * (df['B365>2.5'][i] - 1)
+            else:
+                winnings -= toBet
+        if df['B365<2.5'][i] > df['Predicted_Under2.5'][i]:
+            toBet = kelly_criterion(df['B365<2.5'][i], df['Predicted_Under2.5'][i], wallet)
+            if df['FTHG'][i] + df['FTHG'][i] < 2.5: 
+                winnings += toBet * (df['B365<2.5'][i] - 1)
+            else:
+                winnings -= toBet
+    return winnings
+
 def main():
     # Set up argument parser
     parser = argparse.ArgumentParser(description="Test how well model does on bets")
     parser.add_argument('league', type=str, help='Specify which league')
     parser.add_argument('season', type=str, help='Specify which season')
     parser.add_argument('wallet', type=float, help='Specify how much in your wallet')
+
+    parser.add_argument('--match_odds', action='store_true', help='Calculate match odds')
+    parser.add_argument('--over_under', action='store_true', help='Set over/under value')
     args = parser.parse_args()
 
     # Read data files
@@ -114,11 +144,16 @@ def main():
         df = df_epl_23_24('./data/betting_odds/EPL_23_24.csv')
     else: 
         raise Exception('League and Season not found')
-
-    # Count winnings
     df = add_odds_to_df(df, df_attack, df_defence, df_home_advantage)
-    winnings = np.round(count_winnings(df, args.wallet),2)
-    print(f'Potential winnings for {args.league} {args.season} season given ${args.wallet}: ${winnings}')
+
+    # Calculate winnings if betting on match odds
+    if args.match_odds:
+        winnings = np.round(count_winnings_result(df, args.wallet),2)
+        print(f'Predicted winnings for {args.league} {args.season} season given ${args.wallet}: ${winnings}')
+
+    if args.over_under:
+        winnings = np.round(count_winnings_over_under(df, args.wallet),2)
+        print(f'Predicted winnings for {args.league} {args.season} season given ${args.wallet} for over/under 2.5 goals: ${winnings}')
     
 
 if __name__ == "__main__":
