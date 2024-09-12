@@ -153,9 +153,9 @@ def main():
     print("-------------------------------------------")
     
      # Read CSV files
-    attacking_scores_csv_path = os.path.join('data_'+args.league, 'attacking_scores.csv')
-    defending_scores_csv_path = os.path.join('data_'+args.league, 'defending_scores.csv')
-    home_advantage_csv_path = os.path.join('data_'+args.league, 'home_advantage.csv')
+    attacking_scores_csv_path = os.path.join('data', 'data_'+args.league, 'attacking_scores.csv')
+    defending_scores_csv_path = os.path.join('data', 'data_'+args.league, 'defending_scores.csv')
+    home_advantage_csv_path = os.path.join('data', 'data_'+args.league, 'home_advantage.csv')
     df_attack = pd.read_csv(attacking_scores_csv_path, index_col='team')
     df_defence = pd.read_csv(defending_scores_csv_path, index_col='team')
     df_home_advantage = pd.read_csv(home_advantage_csv_path, index_col='parameter')

@@ -98,13 +98,10 @@ def main():
     parser.add_argument('wallet', type=float, help='Specify how much in your wallet')
     args = parser.parse_args()
 
-    print(args.league)
-    print(args.season)
-
     # Read data files
-    attacking_scores_csv_path = './data_EPL/attacking_scores.csv'
-    defending_scores_csv_path = './data_EPL/defending_scores.csv'
-    home_advantage_csv_path = './data_EPL/home_advantage.csv'
+    attacking_scores_csv_path = './data/data_EPL/attacking_scores.csv'
+    defending_scores_csv_path = './data/data_EPL/defending_scores.csv'
+    home_advantage_csv_path = './data/data_EPL/home_advantage.csv'
     df_attack = pd.read_csv(attacking_scores_csv_path, index_col='team')
     df_defence = pd.read_csv(defending_scores_csv_path, index_col='team')
     df_home_advantage = pd.read_csv(home_advantage_csv_path, index_col='parameter')
@@ -112,9 +109,9 @@ def main():
     # Choose league and season
     df = pd.DataFrame()
     if args.league == 'EPL' and args.season == "24/25":
-        df = df_epl_24_25('./betting_odds/EPL_24_25.csv')
+        df = df_epl_24_25('./data/betting_odds/EPL_24_25.csv')
     elif args.league == 'EPL' and args.season == "23/24":
-        df = df_epl_23_24('./betting_odds/EPL_23_24.csv')
+        df = df_epl_23_24('./data/betting_odds/EPL_23_24.csv')
     else: 
         raise Exception('League and Season not found')
 

@@ -184,20 +184,32 @@ def estimate_ad_score(league):
         'parameter': ['home_advantage', 'p'],
         'value': optimised_parameters[num_teams*2:num_teams*2+2]})
 
-    # Save DataFrames as CSV file
-    # Create a 'data' directory if it doesn't exist
-    os.makedirs('data_'+league, exist_ok=True)
+    # Create 'data' directory if it doesn't exist
+    data_dir = 'data'
+    if not os.path.exists(data_dir):
+        os.makedirs(data_dir)
+        print(f"'{data_dir}' directory created.")
+    
+    # Define the 'data_<league>' directory
+    league_dir = os.path.join(data_dir, f"data_{league}")
+    
+    # Create 'data_<league>' directory if it doesn't exist
+    if not os.path.exists(league_dir):
+        os.makedirs(league_dir)
+        print(f"'{league_dir}' directory created.")
+    else:
+        print(f"'{league_dir}' already exists.")
     
     # Save the DataFrames as CSV files in the 'data' folder
-    attacking_scores_csv_path = os.path.join('data_'+league, 'attacking_scores.csv')
+    attacking_scores_csv_path = os.path.join('data', 'data_'+league, 'attacking_scores.csv')
     df_attacking_scores.to_csv(attacking_scores_csv_path, index=False)
     print(f"Attacking Scores saved as {attacking_scores_csv_path}")
     
-    defending_scores_csv_path = os.path.join('data_'+league, 'defending_scores.csv')
+    defending_scores_csv_path = os.path.join('data', 'data_'+league, 'defending_scores.csv')
     df_defending_scores.to_csv(defending_scores_csv_path, index=False)
     print(f"Defending Scores saved as {defending_scores_csv_path}")
     
-    home_advantage_csv_path = os.path.join('data_'+league, 'home_advantage.csv')
+    home_advantage_csv_path = os.path.join('data', 'data_'+league, 'home_advantage.csv')
     df_home_advantage.to_csv(home_advantage_csv_path, index=False)
     print(f"Home Advantage saved as {home_advantage_csv_path}")
     return
